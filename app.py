@@ -103,6 +103,12 @@ if uploaded_file:
     styled_df["컨벤션환산금액"] = styled_df["컨벤션환산금액"].map("{:,.0f} 원".format)
     styled_df["썸머환산금액"] = styled_df["썸머환산금액"].map("{:,.0f} 원".format)
 
+    # 컬럼 순서 지정
+    display_order = [
+        "계약일자", "보험사", "상품명", "납입기간", "보험료", "쉐어율",
+        "실적보험료", "컨벤션율", "썸머율", "컨벤션환산금액", "썸머환산금액"
+    ]
+
     # 컬럼 순서 정렬
     styled_df = styled_df[display_order]
 
