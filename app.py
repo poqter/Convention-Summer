@@ -99,7 +99,7 @@ if uploaded_file:
                     max_length = max(max_length, len(str(cell.value)))
             except:
                 pass
-        ws.column_dimensions[column].width = max_length + 2
+        ws.column_dimensions[column].width = max_length + 10
 
     sum_row = ws.max_row + 2
     ws.cell(row=sum_row, column=7, value="총 합계").alignment = Alignment(horizontal="center", vertical="center")
