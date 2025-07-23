@@ -101,7 +101,7 @@ if uploaded_file:
     # 다운로드 버튼
     st.download_button(
         label="📥 환산 결과 Excel 다운로드",
-        data=output,
+        data=excel_output,
         file_name=final_filename,
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
