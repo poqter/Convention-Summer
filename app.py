@@ -62,10 +62,21 @@ if uploaded_file:
     st.write(f"▶ 썸머 기준 합계: **{df['썸머환산금액'].sum():,.0f} 원**")
 
     # 다운로드
-    output = df.copy()
-    output["컨벤션환산금액"] = output["컨벤션환산금액"].round(0)
-    output["썸머환산금액"] = output["썸머환산금액"].round(0)
-    st.download_button("📥 결과 다운로드", output.to_csv(index=False).encode("utf-8-sig"), "환산결과.csv", "text/csv")
+    from io import BytesIO
+    import pandas as pd
+
+    # 엑셀 변환
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='환산결과')
+    output.seek(0)
+
+    st.download_button(
+        label="📥 결과 Excel 다운로드",
+        data=output,
+        file_name="환산결과.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 else:
     st.info("먼저 계약 목록 Excel 파일을 업로드해주세요.")
