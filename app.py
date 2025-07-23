@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import os
 
 st.set_page_config(page_title="보험 계약 환산기", layout="wide")
 st.title("📊 보험 계약 실적 환산기 (컨벤션 & 썸머 기준)")
@@ -64,6 +65,7 @@ if uploaded_file:
     # 다운로드
     from io import BytesIO
     import pandas as pd
+    import os
 
     # 엑셀 변환
     output = BytesIO()
@@ -71,10 +73,15 @@ if uploaded_file:
         df.to_excel(writer, index=False, sheet_name='환산결과')
     output.seek(0)
 
+    # 업로드된 파일명에서 기본 이름 추출
+    base_filename = os.path.splitext(uploaded_file.name)[0]
+    final_filename = f"{base_filename}_환산결과.xlsx"
+
+    # 다운로드 버튼
     st.download_button(
-        label="📥 결과 Excel 다운로드",
+        label="📥 환산 결과 Excel 다운로드",
         data=output,
-        file_name="환산결과.xlsx",
+        file_name=final_filename,
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
