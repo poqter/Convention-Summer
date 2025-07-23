@@ -21,16 +21,26 @@ if uploaded_file:
     st.subheader("✅ 업로드된 데이터")
     st.dataframe(df)
 
-    # 환산율 계산 함수
     def classify(row):
-        보험사 = str(row["보험사"])
+        보험사원본 = str(row["보험사"])
         납기 = int(row["납입기간"])
         상품명 = str(row.get("상품명", ""))
 
-        is_생보 = "생명" in 보험사
+        if 보험사원본 == "한화생명":
+            보험사 = "한화생명"
+        elif "생명" in 보험사원본:
+            보험사 = "기타생명"
+        elif 보험사원본 in ["한화손해보험", "삼성화재", "흥국화재", "KB손해보험"]:
+            보험사 = 보험사원본
+        elif any(x in 보험사원본 for x in ["손해", "화재"]):
+            보험사 = "기타손보"
+        else:
+            보험사 = 보험사원본
+
+        is_생보 = 보험사 in ["한화생명", "기타생명"]
         is_한화생명 = 보험사 == "한화생명"
         is_손보_250 = 보험사 in ["한화손해보험", "삼성화재", "흥국화재", "KB손해보험"]
-        is_손보_200 = 보험사 in ["롯데손해보험", "메리츠화재", "현대해상", "DB손해보험", "MG손해보험", "하나손해보험", "AIG손해보험"]
+        is_손보_200 = 보험사 == "기타손보"
         is_저축_제외 = any(x in 상품명 for x in ["저축", "연금", "일시납", "적립금", "태아보험일시납"])
 
         # 컨벤션 기준
@@ -63,7 +73,7 @@ if uploaded_file:
     df["컨벤션환산금액"] = df["보험료"] * df["컨벤션율"] / 100
     df["썸머환산금액"] = df["보험료"] * df["썸머율"] / 100
 
-    # 스타일링용 복사본
+    # 복사본 스타일링
     styled_df = df.copy()
     styled_df["계약일자"] = pd.to_datetime(styled_df["계약일자"].astype(str), format="%Y%m%d").dt.strftime("%Y년%m월%d일")
     styled_df["납입기간"] = styled_df["납입기간"].astype(str) + "년"
@@ -73,20 +83,21 @@ if uploaded_file:
     styled_df["컨벤션환산금액"] = styled_df["컨벤션환산금액"].map("{:,.0f} 원".format)
     styled_df["썸머환산금액"] = styled_df["썸머환산금액"].map("{:,.0f} 원".format)
 
-    # 합계 계산
+    # 합계
     convention_sum = df["컨벤션환산금액"].sum()
     summer_sum = df["썸머환산금액"].sum()
 
-    # 엑셀 생성
+    # 엑셀 출력
     wb = Workbook()
     ws = wb.active
     ws.title = "환산결과"
+
     for r_idx, row in enumerate(dataframe_to_rows(styled_df, index=False, header=True), 1):
         for c_idx, value in enumerate(row, 1):
             cell = ws.cell(row=r_idx, column=c_idx, value=value)
             cell.alignment = Alignment(horizontal="center", vertical="center")
 
-    # 표 삽입
+    # 표 적용
     end_col_letter = ws.cell(row=1, column=styled_df.shape[1]).column_letter
     end_row = ws.max_row
     table_ref = f"A1:{end_col_letter}{end_row}"
@@ -96,7 +107,7 @@ if uploaded_file:
     table.tableStyleInfo = style
     ws.add_table(table)
 
-    # 열 너비 자동 조정
+    # 열 너비
     for column_cells in ws.columns:
         max_length = 0
         column = column_cells[0].column_letter
@@ -105,7 +116,7 @@ if uploaded_file:
                 max_length = max(max_length, len(str(cell.value)))
         ws.column_dimensions[column].width = max_length + 10
 
-    # 총합 행 추가
+    # 총합 행
     sum_row = ws.max_row + 2
     ws.cell(row=sum_row, column=7, value="총 합계").alignment = Alignment(horizontal="center", vertical="center")
     ws.cell(row=sum_row, column=8, value="{:,.0f} 원".format(convention_sum)).alignment = Alignment(horizontal="center", vertical="center")
@@ -113,12 +124,10 @@ if uploaded_file:
     for col in [7, 8, 9]:
         ws.cell(row=sum_row, column=col).font = Font(bold=True)
 
-    # 저장
     excel_output = BytesIO()
     wb.save(excel_output)
     excel_output.seek(0)
 
-    # Streamlit 출력
     st.subheader("📄 환산 결과 요약")
     st.dataframe(styled_df)
 
@@ -132,6 +141,5 @@ if uploaded_file:
         file_name=download_filename,
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-
 else:
     st.info("📤 계약 목록 Excel 파일(.xlsx)을 업로드해주세요.")
