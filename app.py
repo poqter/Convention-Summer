@@ -29,6 +29,9 @@ if uploaded_file:
         st.error("❌ '쉐어율'에 빈 값이 포함되어 있습니다. 모든 행에 값을 입력해주세요.")
         st.stop()
 
+    # 쉐어율 강제 변환 (퍼센트 서식/소수/문자 모두 대응)
+    df["쉐어율"] = df["쉐어율"].apply(lambda x: float(str(x).replace('%','')) if pd.notnull(x) else x)
+
     def classify(row):
         보험사원본 = str(row["보험사"])
         납기 = int(row["납입기간"])
@@ -81,7 +84,7 @@ if uploaded_file:
     df[["컨벤션율", "썸머율"]] = df.apply(classify, axis=1)
 
     # 실적 보험료 계산 (쉐어율 적용)
-    df["실적보험료"] = df["보험료"] * df["쉐어율"]
+    df["실적보험료"] = df["보험료"] * df["쉐어율"] / 100
 
     # 환산금액 계산
     df["컨벤션환산금액"] = df["실적보험료"] * df["컨벤션율"] / 100
