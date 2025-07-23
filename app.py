@@ -18,8 +18,16 @@ if uploaded_file:
     download_filename = f"{base_filename}_환산결과.xlsx"
     df = pd.read_excel(uploaded_file)
 
-#    st.subheader("✅ 업로드된 데이터")
-#    st.dataframe(df)
+    # 필수 컬럼 체크
+    required_columns = {"계약일자", "보험사", "상품명", "납입기간", "보험료", "쉐어율"}
+    if not required_columns.issubset(df.columns):
+        st.error("❌ 업로드된 파일에 다음 항목이 모두 포함되어 있어야 합니다:\n" + ", ".join(required_columns))
+        st.stop()
+
+    # 쉐어율 누락 확인
+    if df["쉐어율"].isnull().any():
+        st.error("❌ '쉐어율'에 빈 값이 포함되어 있습니다. 모든 행에 값을 입력해주세요.")
+        st.stop()
 
     def classify(row):
         보험사원본 = str(row["보험사"])
@@ -41,6 +49,7 @@ if uploaded_file:
         is_한화생명 = 보험사 == "한화생명"
         is_손보_250 = 보험사 in ["한화손해보험", "삼성화재", "흥국화재", "KB손해보험"]
         is_손보_200 = 보험사 == "기타손보"
+        is_저축_제외 = any(x in 상품명 for x in ["저축", "연금", "일시납", "적립금", "태아보험일시납"])
 
         # 컨벤션 기준
         if is_한화생명:
@@ -55,7 +64,9 @@ if uploaded_file:
             conv_rate = 0
 
         # 썸머 기준
-        if is_한화생명:
+        if is_저축_제외:
+            summ_rate = 0
+        elif is_한화생명:
             summ_rate = 150 if 납기 >= 10 else 100
         elif is_생보:
             summ_rate = 100 if 납기 >= 10 else 30
@@ -66,23 +77,31 @@ if uploaded_file:
 
         return pd.Series([conv_rate, summ_rate])
 
+    # 환산율 적용
     df[["컨벤션율", "썸머율"]] = df.apply(classify, axis=1)
-    df["컨벤션환산금액"] = df["보험료"] * df["컨벤션율"] / 100
-    df["썸머환산금액"] = df["보험료"] * df["썸머율"] / 100
 
-    # 복사본 스타일링
-    styled_df = df.copy()
-    styled_df["계약일자"] = pd.to_datetime(styled_df["계약일자"].astype(str), format="%Y%m%d").dt.strftime("%Y년%m월%d일")
-    styled_df["납입기간"] = styled_df["납입기간"].astype(str) + "년"
-    styled_df["보험료"] = styled_df["보험료"].map("{:,.0f} 원".format)
-    styled_df["컨벤션율"] = styled_df["컨벤션율"].astype(str) + "%"
-    styled_df["썸머율"] = styled_df["썸머율"].astype(str) + "%"
-    styled_df["컨벤션환산금액"] = styled_df["컨벤션환산금액"].map("{:,.0f} 원".format)
-    styled_df["썸머환산금액"] = styled_df["썸머환산금액"].map("{:,.0f} 원".format)
+    # 실적 보험료 계산 (쉐어율 적용)
+    df["실적보험료"] = df["보험료"] * df["쉐어율"] / 100
+
+    # 환산금액 계산
+    df["컨벤션환산금액"] = df["실적보험료"] * df["컨벤션율"] / 100
+    df["썸머환산금액"] = df["실적보험료"] * df["썸머율"] / 100
 
     # 합계
     convention_sum = df["컨벤션환산금액"].sum()
     summer_sum = df["썸머환산금액"].sum()
+
+    # 스타일링용 복사본
+    styled_df = df.copy()
+    styled_df["계약일자"] = pd.to_datetime(styled_df["계약일자"].astype(str), format="%Y%m%d").dt.strftime("%Y년%m월%d일")
+    styled_df["납입기간"] = styled_df["납입기간"].astype(str) + "년"
+    styled_df["보험료"] = styled_df["보험료"].map("{:,.0f} 원".format)
+    styled_df["쉐어율"] = styled_df["쉐어율"].astype(str) + " %"
+    styled_df["실적보험료"] = styled_df["실적보험료"].map("{:,.0f} 원".format)
+    styled_df["컨벤션율"] = styled_df["컨벤션율"].astype(str) + " %"
+    styled_df["썸머율"] = styled_df["썸머율"].astype(str) + " %"
+    styled_df["컨벤션환산금액"] = styled_df["컨벤션환산금액"].map("{:,.0f} 원".format)
+    styled_df["썸머환산금액"] = styled_df["썸머환산금액"].map("{:,.0f} 원".format)
 
     # 엑셀 출력
     wb = Workbook()
@@ -97,30 +116,25 @@ if uploaded_file:
     # 표 적용
     end_col_letter = ws.cell(row=1, column=styled_df.shape[1]).column_letter
     end_row = ws.max_row
-    table_ref = f"A1:{end_col_letter}{end_row}"
-    table = Table(displayName="환산결과표", ref=table_ref)
-    style = TableStyleInfo(name="TableStyleMedium9", showFirstColumn=False,
-                           showLastColumn=False, showRowStripes=True, showColumnStripes=False)
+    table = Table(displayName="환산결과표", ref=f"A1:{end_col_letter}{end_row}")
+    style = TableStyleInfo(name="TableStyleMedium9", showRowStripes=True)
     table.tableStyleInfo = style
     ws.add_table(table)
 
     # 열 너비
     for column_cells in ws.columns:
-        max_length = 0
-        column = column_cells[0].column_letter
-        for cell in column_cells:
-            if cell.value:
-                max_length = max(max_length, len(str(cell.value)))
-        ws.column_dimensions[column].width = max_length + 10
+        max_len = max(len(str(cell.value)) if cell.value else 0 for cell in column_cells)
+        ws.column_dimensions[column_cells[0].column_letter].width = max_len + 10
 
     # 총합 행
     sum_row = ws.max_row + 2
-    ws.cell(row=sum_row, column=7, value="총 합계").alignment = Alignment(horizontal="center", vertical="center")
-    ws.cell(row=sum_row, column=8, value="{:,.0f} 원".format(convention_sum)).alignment = Alignment(horizontal="center", vertical="center")
-    ws.cell(row=sum_row, column=9, value="{:,.0f} 원".format(summer_sum)).alignment = Alignment(horizontal="center", vertical="center")
-    for col in [7, 8, 9]:
+    ws.cell(row=sum_row, column=8, value="총 합계").alignment = Alignment(horizontal="center")
+    ws.cell(row=sum_row, column=9, value="{:,.0f} 원".format(convention_sum)).alignment = Alignment(horizontal="center")
+    ws.cell(row=sum_row, column=10, value="{:,.0f} 원".format(summer_sum)).alignment = Alignment(horizontal="center")
+    for col in [8, 9, 10]:
         ws.cell(row=sum_row, column=col).font = Font(bold=True)
 
+    # 다운로드
     excel_output = BytesIO()
     wb.save(excel_output)
     excel_output.seek(0)
