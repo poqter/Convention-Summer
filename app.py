@@ -105,6 +105,10 @@ if uploaded_file:
     st.subheader("📄 환산 결과 요약")
     st.dataframe(styled_df)
 
+    st.subheader("📈 총합")
+    st.write(f"▶ 컨벤션 기준 합계: **{df['컨벤션환산금액'].sum():,.0f} 원**")
+    st.write(f"▶ 썸머 기준 합계: **{df['썸머환산금액'].sum():,.0f} 원**")
+
     st.download_button(
         label="📥 환산 결과 엑셀 다운로드",
         data=excel_output,
