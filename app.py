@@ -91,12 +91,12 @@ if uploaded_file:
             cell.alignment = Alignment(horizontal="center", vertical="center")
 
     sum_row = ws.max_row + 2
-    ws.cell(row=sum_row, column=6, value="총 합계").alignment = Alignment(horizontal="center", vertical="center")
-    ws.cell(row=sum_row, column=7, value="{:,.0f} 원".format(convention_sum)).alignment = Alignment(horizontal="center", vertical="center")
-    ws.cell(row=sum_row, column=8, value="{:,.0f} 원".format(summer_sum)).alignment = Alignment(horizontal="center", vertical="center")
-    ws.cell(row=sum_row, column=6).font = Font(bold=True)
+    ws.cell(row=sum_row, column=7, value="총 합계").alignment = Alignment(horizontal="center", vertical="center")
+    ws.cell(row=sum_row, column=8, value="{:,.0f} 원".format(convention_sum)).alignment = Alignment(horizontal="center", vertical="center")
+    ws.cell(row=sum_row, column=9, value="{:,.0f} 원".format(summer_sum)).alignment = Alignment(horizontal="center", vertical="center")
     ws.cell(row=sum_row, column=7).font = Font(bold=True)
     ws.cell(row=sum_row, column=8).font = Font(bold=True)
+    ws.cell(row=sum_row, column=9).font = Font(bold=True)
 
     excel_output = BytesIO()
     wb.save(excel_output)
