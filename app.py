@@ -145,6 +145,7 @@ if uploaded_file:
     st.dataframe(styled_df)
 
     st.subheader("📈 총합")
+    st.write(f"▶ 실적보험료 합계: **{performance_sum:,.0f} 원**")
     st.write(f"▶ 컨벤션 기준 합계: **{convention_sum:,.0f} 원**")
     st.write(f"▶ 썸머 기준 합계: **{summer_sum:,.0f} 원**")
 
