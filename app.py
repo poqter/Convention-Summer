@@ -63,15 +63,36 @@ if uploaded_file:
     st.write(f"▶ 썸머 기준 합계: **{df['썸머환산금액'].sum():,.0f} 원**")
 
     # 다운로드
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment
+    from openpyxl.utils.dataframe import dataframe_to_rows
     from io import BytesIO
     import pandas as pd
     import os
+    
+    # 스타일 적용용 복사본
+    styled_df = df.copy()
+    styled_df["계약일자"] = pd.to_datetime(styled_df["계약일자"]).dt.strftime("%Y년%m월%d일")
+    styled_df["납입기간"] = styled_df["납입기간"].astype(str) + "년"
+    styled_df["보험료"] = styled_df["보험료"].map("{:,.0f} 원".format)
+    styled_df["컨벤션율"] = styled_df["컨벤션율"].astype(str) + "배"
+    styled_df["썸머율"] = styled_df["썸머율"].astype(str) + "배"
+    styled_df["컨벤션환산금액"] = styled_df["컨벤션환산금액"].map("{:,.0f} 원".format)
+    styled_df["썸머환산금액"] = styled_df["썸머환산금액"].map("{:,.0f} 원".format)
 
-    # 엑셀 변환
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='환산결과')
-    output.seek(0)
+    # 엑셀 워크북 생성
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "환산결과"
+    for r_idx, row in enumerate(dataframe_to_rows(styled_df, index=False, header=True), 1):
+        for c_idx, value in enumerate(row, 1):
+            cell = ws.cell(row=r_idx, column=c_idx, value=value)
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    # 바이트 객체로 저장
+    excel_output = BytesIO()
+    wb.save(excel_output)
+    excel_output.seek(0)
 
     # 업로드된 파일명에서 기본 이름 추출
     base_filename = os.path.splitext(uploaded_file.name)[0]
