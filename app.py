@@ -88,6 +88,7 @@ if uploaded_file:
     df["썸머환산금액"] = df["실적보험료"] * df["썸머율"] / 100
 
     # 합계
+    performance_sum = df["실적보험료"].sum()
     convention_sum = df["컨벤션환산금액"].sum()
     summer_sum = df["썸머환산금액"].sum()
 
@@ -129,9 +130,10 @@ if uploaded_file:
     # 총합 행
     sum_row = ws.max_row + 2
     ws.cell(row=sum_row, column=8, value="총 합계").alignment = Alignment(horizontal="center")
-    ws.cell(row=sum_row, column=9, value="{:,.0f} 원".format(convention_sum)).alignment = Alignment(horizontal="center")
-    ws.cell(row=sum_row, column=10, value="{:,.0f} 원".format(summer_sum)).alignment = Alignment(horizontal="center")
-    for col in [8, 9, 10]:
+    ws.cell(row=sum_row, column=9, value="{:,.0f} 원".format(performance_sum)).alignment = Alignment(horizontal="center")
+    ws.cell(row=sum_row, column=10, value="{:,.0f} 원".format(convention_sum)).alignment = Alignment(horizontal="center")
+    ws.cell(row=sum_row, column=11, value="{:,.0f} 원".format(summer_sum)).alignment = Alignment(horizontal="center")
+    for col in [8, 9, 10, 11]:
         ws.cell(row=sum_row, column=col).font = Font(bold=True)
 
     # 다운로드
