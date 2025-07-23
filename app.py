@@ -18,8 +18,8 @@ if uploaded_file:
     download_filename = f"{base_filename}_환산결과.xlsx"
     df = pd.read_excel(uploaded_file)
 
-    st.subheader("✅ 업로드된 데이터")
-    st.dataframe(df)
+#    st.subheader("✅ 업로드된 데이터")
+#    st.dataframe(df)
 
     def classify(row):
         보험사원본 = str(row["보험사"])
