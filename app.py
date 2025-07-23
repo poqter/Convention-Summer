@@ -41,7 +41,6 @@ if uploaded_file:
         is_한화생명 = 보험사 == "한화생명"
         is_손보_250 = 보험사 in ["한화손해보험", "삼성화재", "흥국화재", "KB손해보험"]
         is_손보_200 = 보험사 == "기타손보"
-        is_저축_제외 = any(x in 상품명 for x in ["저축", "연금", "일시납", "적립금", "태아보험일시납"])
 
         # 컨벤션 기준
         if is_한화생명:
@@ -56,9 +55,7 @@ if uploaded_file:
             conv_rate = 0
 
         # 썸머 기준
-        if is_저축_제외:
-            summ_rate = 0
-        elif is_한화생명:
+        if is_한화생명:
             summ_rate = 150 if 납기 >= 10 else 100
         elif is_생보:
             summ_rate = 100 if 납기 >= 10 else 30
