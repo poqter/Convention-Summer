@@ -140,7 +140,6 @@ if uploaded_file:
     excel_output.seek(0)
 
     st.subheader("📄 환산 결과 요약")
-    styled_df = styled_df[display_order]  # 컬럼 순서 재정렬
     st.dataframe(styled_df)
 
     st.subheader("📈 총합")
