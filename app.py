@@ -103,7 +103,7 @@ if uploaded_file:
         for cell in column_cells:
             if cell.value:
                 max_length = max(max_length, len(str(cell.value)))
-        ws.column_dimensions[column].width = max_length + 2
+        ws.column_dimensions[column].width = max_length + 10
 
     # 총합 행 추가
     sum_row = ws.max_row + 2
