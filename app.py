@@ -94,7 +94,16 @@ if uploaded_file:
 
     # 스타일링용 복사본
     styled_df = df.copy()
-    styled_df["계약일자"] = pd.to_datetime(df["계약일자"], errors='coerce').dt.strftime("%Y-%m-%d")
+    # ✅ 계약일자 날짜 형식 변환 (오류 발생 방지 + 사용자 경고 메시지 추가)
+    styled_df["계약일자"] = pd.to_datetime(styled_df["계약일자"], errors="coerce")
+
+    # ⛔ 변환 실패한 항목이 있는 경우 경고 표시 (Streamlit 환경)
+    invalid_dates = styled_df[styled_df["계약일자"].isna()]
+    if not invalid_dates.empty:
+        st.warning(f"⚠️ {len(invalid_dates)}건의 계약일자가 날짜로 인식되지 않았습니다. 엑셀에서 '2025-07-23'처럼 정확한 형식으로 입력해주세요.")
+
+    # ✅ 날짜를 "YYYY-MM-DD" 문자열로 변환
+    styled_df["계약일자"] = styled_df["계약일자"].dt.strftime("%Y-%m-%d")
     styled_df["납입기간"] = styled_df["납입기간"].astype(str) + "년"
     styled_df["보험료"] = styled_df["보험료"].map("{:,.0f} 원".format)
     styled_df["쉐어율"] = styled_df["쉐어율"].astype(str) + " %"
