@@ -213,9 +213,21 @@ if uploaded_file:
     st.dataframe(styled_df)
 
     st.subheader("📈 총합")
-    st.write(f"▶ 실적보험료 합계: **{performance_sum:,.0f} 원**")
-    st.write(f"▶ 컨벤션 기준 합계: **{convention_sum:,.0f} 원**")
-    st.write(f"▶ 썸머 기준 합계: **{summer_sum:,.0f} 원**")
+    # ✅ 총합 강조 박스 스타일 출력
+    st.markdown("""
+    <div style='
+        border: 2px solid #1f77b4;
+        border-radius: 10px;
+        padding: 20px;
+        background-color: #f7faff;
+        margin-bottom: 20px;
+    '>
+        <h4 style='color:#1f77b4;'>📈 총합 요약</h4>
+        <p><strong>▶ 실적보험료 합계:</strong> {:,.0f} 원</p>
+        <p><strong>▶ 컨벤션 기준 합계:</strong> {:,.0f} 원</p>
+        <p><strong>▶ 썸머 기준 합계:</strong> {:,.0f} 원</p>
+    </div>
+    """.format(performance_sum, convention_sum, summer_sum), unsafe_allow_html=True)
 
     # 차이 항목 시각화 (빨강/초록)
     def colorize_amount(amount):
@@ -226,8 +238,35 @@ if uploaded_file:
         else:
             return "<span style='color:black;'>기준 달성</span>"
 
-    st.markdown(f"▶ 컨벤션 목표 대비: {colorize_amount(convention_gap)}", unsafe_allow_html=True)
-    st.markdown(f"▶ 썸머 목표 대비: {colorize_amount(summer_gap)}", unsafe_allow_html=True)
+    # ✅ 목표 대비 결과 강조 박스
+    def gap_box(title, amount):
+        if amount > 0:
+            color = "#e6f4ea"
+            text_color = "#0c6b2c"
+            symbol = f"+{amount:,.0f} 원 초과"
+        elif amount < 0:
+            color = "#fdecea"
+            text_color = "#b80000"
+            symbol = f"{amount:,.0f} 원 부족"
+        else:
+            color = "#f3f3f3"
+            text_color = "#000000"
+            symbol = "기준 달성"
+        
+        return f"""
+        <div style='
+            border: 1px solid {text_color};
+            border-radius: 8px;
+            background-color: {color};
+            padding: 12px;
+            margin: 10px 0;
+        '>
+            <strong style='color:{text_color};'>{title}: {symbol}</strong>
+        </div>
+        """
+
+    st.markdown(gap_box("컨벤션 목표 대비", convention_gap), unsafe_allow_html=True)
+    st.markdown(gap_box("썸머 목표 대비", summer_gap), unsafe_allow_html=True)
 
     st.download_button(
         label="📥 환산 결과 엑셀 다운로드",
