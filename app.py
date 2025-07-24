@@ -94,7 +94,7 @@ if uploaded_file:
 
     # 스타일링용 복사본
     styled_df = df.copy()
-    styled_df["계약일자"] = pd.to_datetime(styled_df["계약일자"].astype(str), format="%Y%m%d").dt.strftime("%Y년%m월%d일")
+    styled_df["계약일자"] = pd.to_datetime(df["계약일자"], errors='coerce').dt.strftime("%Y-%m-%d")
     styled_df["납입기간"] = styled_df["납입기간"].astype(str) + "년"
     styled_df["보험료"] = styled_df["보험료"].map("{:,.0f} 원".format)
     styled_df["쉐어율"] = styled_df["쉐어율"].astype(str) + " %"
