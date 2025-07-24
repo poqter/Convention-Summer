@@ -34,6 +34,7 @@ if uploaded_file:
         납기 = int(row["납입기간"])
         상품명 = str(row.get("상품명", ""))
 
+        # 보험사 분류
         if 보험사원본 == "한화생명":
             보험사 = "한화생명"
         elif "생명" in 보험사원본:
@@ -43,21 +44,22 @@ if uploaded_file:
         elif any(x in 보험사원본 for x in ["손해", "화재"]):
             보험사 = "기타손보"
         else:
-            보험사 = 보험사원본
+            보험사 = 보험사원본  # 분류되지 않은 보험사는 그대로 사용
 
-        is_생보 = 보험사 in ["한화생명", "기타생보"]
+        # 조건 플래그
         is_한화생명 = 보험사 == "한화생명"
-        is_손보_250 = 보험사 in ["한화손해", "삼성화재", "흥국화재", "KB손해"]
-        is_손보_200 = 보험사 == "기타손보"
+        is_기타생보 = 보험사 == "기타생보"
+        is_손보_250 = 보험사 in ["한화손보", "삼성화재", "흥국화재", "KB손보"]
+        is_기타손보 = 보험사 == "기타손보"
 
         # 컨벤션 기준
         if is_한화생명:
             conv_rate = 150
         elif is_손보_250:
             conv_rate = 250
-        elif is_손보_200:
+        elif is_기타손보:
             conv_rate = 200
-        elif is_생보:
+        elif is_기타생보:
             conv_rate = 100 if 납기 >= 10 else 50
         else:
             conv_rate = 0
@@ -65,12 +67,14 @@ if uploaded_file:
         # 썸머 기준
         if is_한화생명:
             summ_rate = 150 if 납기 >= 10 else 100
-        elif is_생보:
+        elif is_기타생보:
             summ_rate = 100 if 납기 >= 10 else 30
         elif is_손보_250:
             summ_rate = 200 if 납기 >= 10 else 100
-        else:
+        elif is_기타손보:
             summ_rate = 100 if 납기 >= 10 else 50
+        else:
+            summ_rate = 0
 
         return pd.Series([conv_rate, summ_rate])
 
