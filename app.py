@@ -131,6 +131,12 @@ if uploaded_file:
     styled_df["컨벤션환산금액"] = styled_df["컨벤션환산금액"].map("{:,.0f} 원".format)
     styled_df["썸머환산금액"] = styled_df["썸머환산금액"].map("{:,.0f} 원".format)
 
+    # ✅ 컬럼 순서 정렬 (화면 + 엑셀 다운로드 모두 적용됨)
+    styled_df = styled_df[[
+        "계약일자", "보험사", "상품명", "납입기간", "보험료", "쉐어율",
+        "컨벤션율", "썸머율", "실적보험료", "컨벤션환산금액", "썸머환산금액"
+    ]]
+
     # 엑셀 출력
     wb = Workbook()
     ws = wb.active
