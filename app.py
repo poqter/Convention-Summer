@@ -212,22 +212,34 @@ if uploaded_file:
     st.subheader("📄 환산 결과 요약")
     st.dataframe(styled_df)
 
-    st.subheader("📈 총합")
-    st.write(f"▶ 실적보험료 합계: **{performance_sum:,.0f} 원**")
-    st.write(f"▶ 컨벤션 기준 합계: **{convention_sum:,.0f} 원**")
-    st.write(f"▶ 썸머 기준 합계: **{summer_sum:,.0f} 원**")
+    # 🎯 목표 기준
+    convention_target = 1_500_000
+    summer_target = 3_000_000
+    convention_gap = convention_sum - convention_target
+    summer_gap = summer_sum - summer_target
 
-    # 차이 항목 시각화 (빨강/초록)
-    def colorize_amount(amount):
+    # 컬러 텍스트 포맷 함수
+    def colorize(amount):
         if amount > 0:
-            return f"<span style='color:green;'>+{amount:,.0f} 원 초과</span>"
+            return f":green[+{amount:,.0f} 원 초과]"
         elif amount < 0:
-            return f"<span style='color:red;'>{amount:,.0f} 원 부족</span>"
+            return f":red[{amount:,.0f} 원 부족]"
         else:
-            return "<span style='color:black;'>기준 달성</span>"
+            return ":blue[기준 달성]"
 
-    st.markdown(f"▶ 컨벤션 목표 대비: {colorize_amount(convention_gap)}", unsafe_allow_html=True)
-    st.markdown(f"▶ 썸머 목표 대비: {colorize_amount(summer_gap)}", unsafe_allow_html=True)
+    # ✅ 두 열로 나누어 시각화
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("📈 총합")
+        st.markdown(f"▶ **실적보험료 합계**: {performance_sum:,.0f} 원")
+        st.markdown(f"▶ **컨벤션 기준 합계**: {convention_sum:,.0f} 원")
+        st.markdown(f"▶ **썸머 기준 합계**: {summer_sum:,.0f} 원")
+
+    with col2:
+        st.subheader("🎯 목표 대비")
+        st.markdown(f"컨벤션 목표(1,500,000 원) → {colorize(convention_gap)}")
+        st.markdown(f"썸머 목표(3,000,000 원) → {colorize(summer_gap)}")
 
     st.download_button(
         label="📥 환산 결과 엑셀 다운로드",
