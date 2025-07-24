@@ -169,6 +169,41 @@ if uploaded_file:
     for col in [8, 9, 10, 11]:
         ws.cell(row=sum_row, column=col).font = Font(bold=True)
 
+    from openpyxl.styles import PatternFill
+
+    # 목표 기준 설정
+    convention_target = 1_500_000
+    summer_target = 3_000_000
+
+    # 차이 계산
+    convention_gap = convention_sum - convention_target
+    summer_gap = summer_sum - summer_target
+
+    # 총합 다음 행
+    result_row = sum_row + 2
+
+    # Gap 값 셀 텍스트와 색상 설정
+    def get_gap_style(amount):
+        if amount > 0:
+            return f"+{amount:,.0f} 원 초과", "008000"  # 초록
+        elif amount < 0:
+            return f"{amount:,.0f} 원 부족", "FF0000"  # 빨강
+        else:
+            return "기준 달성", "000000"  # 검정
+
+    # 각각 적용
+    convention_text, convention_color = get_gap_style(convention_gap)
+    summer_text, summer_color = get_gap_style(summer_gap)
+
+    # 엑셀 작성
+    ws.cell(row=result_row, column=10, value="컨벤션 기준 대비").alignment = Alignment(horizontal="center")
+    ws.cell(row=result_row, column=11, value=convention_text).alignment = Alignment(horizontal="center")
+    ws.cell(row=result_row, column=11).font = Font(bold=True, color=convention_color)
+
+    ws.cell(row=result_row + 1, column=10, value="썸머 기준 대비").alignment = Alignment(horizontal="center")
+    ws.cell(row=result_row + 1, column=11, value=summer_text).alignment = Alignment(horizontal="center")
+    ws.cell(row=result_row + 1, column=11).font = Font(bold=True, color=summer_color)
+
     # 다운로드
     excel_output = BytesIO()
     wb.save(excel_output)
@@ -181,6 +216,18 @@ if uploaded_file:
     st.write(f"▶ 실적보험료 합계: **{performance_sum:,.0f} 원**")
     st.write(f"▶ 컨벤션 기준 합계: **{convention_sum:,.0f} 원**")
     st.write(f"▶ 썸머 기준 합계: **{summer_sum:,.0f} 원**")
+
+    # 차이 항목 시각화 (빨강/초록)
+    def colorize_amount(amount):
+        if amount > 0:
+            return f"<span style='color:green;'>+{amount:,.0f} 원 초과</span>"
+        elif amount < 0:
+            return f"<span style='color:red;'>{amount:,.0f} 원 부족</span>"
+        else:
+            return "<span style='color:black;'>기준 달성</span>"
+
+    st.markdown(f"▶ 컨벤션 목표 대비: {colorize_amount(convention_gap)}", unsafe_allow_html=True)
+    st.markdown(f"▶ 썸머 목표 대비: {colorize_amount(summer_gap)}", unsafe_allow_html=True)
 
     st.download_button(
         label="📥 환산 결과 엑셀 다운로드",
