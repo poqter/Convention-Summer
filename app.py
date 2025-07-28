@@ -17,13 +17,13 @@ if uploaded_file:
     base_filename = os.path.splitext(uploaded_file.name)[0]
     download_filename = f"{base_filename}_환산결과.xlsx"
     # 1. 필요한 컬럼만 로드
-    columns_needed = ["계약일", "보험사", "상품명", "납입기간", "계속보험료", "쉐어율"]
+    columns_needed = ["계약일", "보험사", "상품명", "납입기간", "초회보험료", "쉐어율"]
     df = pd.read_excel(uploaded_file, usecols=columns_needed)
 
     # 2. 컬럼명 정규화 (내부에서 쓸 이름으로 바꿈)
     df.rename(columns={
         "계약일": "계약일자",
-        "계속보험료": "보험료"
+        "초회보험료": "보험료"
     }, inplace=True)
 
     # 3. 필수 항목 체크
