@@ -59,6 +59,24 @@ if uploaded_file:
         excluded_display = excluded_df[["계약일", "보험사", "상품명", "납입기간", "초회보험료", "납입방법"]]
         excluded_display.columns = ["계약일", "보험사", "상품명", "납입기간", "보험료", "납입방법"]
         st.dataframe(excluded_display)
+    
+        # ✅ 제외된 계약별 사유 텍스트 출력 (제외사유 컬럼 없이 판단)
+        st.markdown("📝 **제외 계약별 사유:**")
+
+        for idx, row in excluded_df.iterrows():
+            상품명 = row["상품명"]
+            사유들 = []
+
+            if "납입방법" in row and isinstance(row["납입방법"], str) and "일시납" in row["납입방법"]:
+                사유들.append("일시납")
+            if "상품군2" in row and isinstance(row["상품군2"], str) and ("연금성" in row["상품군2"] or "저축성" in row["상품군2"]):
+                사유들.append("연금/저축성")
+            if "계약상태" in row and isinstance(row["계약상태"], str) and "철회" in row["계약상태"]:
+                사유들.append("철회")
+
+            사유_텍스트 = " / ".join(사유들) if 사유들 else "제외 조건 미상"
+            st.markdown(f"- ({상품명}) → 제외사유: {사유_텍스트}")
+
 
     # ✅ 제외된 계약별 사유 텍스트 출력
     if "제외사유" in excluded_df.columns:
