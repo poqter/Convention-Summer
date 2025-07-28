@@ -17,7 +17,7 @@ if uploaded_file:
     base_filename = os.path.splitext(uploaded_file.name)[0]
     download_filename = f"{base_filename}_환산결과.xlsx"
     # 1. 필요한 컬럼만 로드
-    columns_needed = ["계약일", "보험사", "상품명", "납입기간", "초회보험료", "쉐어율"]
+    columns_needed = ["계약일", "보험사", "상품명", "납입기간", "초회보험료", "쉐어율", "납입방법"]
     df = pd.read_excel(uploaded_file, usecols=columns_needed)
 
     # '납입방법' 컬럼이 있는 경우, '일시납'인 계약 제외
