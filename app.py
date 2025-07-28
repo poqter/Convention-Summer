@@ -20,6 +20,15 @@ if uploaded_file:
     columns_needed = ["계약일", "보험사", "상품명", "납입기간", "초회보험료", "쉐어율"]
     df = pd.read_excel(uploaded_file, usecols=columns_needed)
 
+    # '납입방법' 컬럼이 있는 경우, '일시납'인 계약 제외
+    if "납입방법" in df.columns:
+        before_count = len(df)
+        df = df[~df["납입방법"].astype(str).str.strip().str.contains("일시납")]
+        after_count = len(df)
+        excluded_count = before_count - after_count
+        if excluded_count > 0:
+            st.warning(f"⚠️ '일시납' 계약 {excluded_count}건은 계산에서 제외되었습니다.")
+
     # 2. 컬럼명 정규화 (내부에서 쓸 이름으로 바꿈)
     df.rename(columns={
         "계약일": "계약일자",
