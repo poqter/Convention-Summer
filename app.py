@@ -23,17 +23,31 @@ if uploaded_file:
     # '납입방법' 컬럼이 있는 경우, '일시납'인 계약 제외
     if "납입방법" in df.columns:
         before_count = len(df)
-        df = df[~df["납입방법"].astype(str).str.strip().str.contains("일시납")]
+        df["납입방법"] = df["납입방법"].astype(str).str.strip()
+        is_lumpsum = df["납입방법"].str.contains("일시납")
+
+        excluded_df = df[is_lumpsum].copy()     # 💡 제외된 계약 따로 저장
+        df = df[~is_lumpsum].copy()              # 💡 나머지만 계산에 사용
         after_count = len(df)
         excluded_count = before_count - after_count
         if excluded_count > 0:
             st.warning(f"⚠️ '일시납' 계약 {excluded_count}건은 계산에서 제외되었습니다.")
+
+
+        
 
     # 2. 컬럼명 정규화 (내부에서 쓸 이름으로 바꿈)
     df.rename(columns={
         "계약일": "계약일자",
         "초회보험료": "보험료"
     }, inplace=True)
+
+    # 제외된 계약 테이블 추가 출력
+    if not excluded_df.empty:
+        st.subheader("🚫 제외된 일시납 계약 목록")
+        excluded_display = excluded_df[["계약일자", "보험사", "상품명", "납입기간", "초회보험료", "납입방법"]]
+        excluded_display.columns = ["계약일자", "보험사", "상품명", "납입기간", "보험료", "납입방법"]
+        st.dataframe(excluded_display)
 
     # 3. 필수 항목 체크
     required_columns = {"계약일자", "보험사", "상품명", "납입기간", "보험료", "쉐어율"}
