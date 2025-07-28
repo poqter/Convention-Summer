@@ -17,25 +17,36 @@ if uploaded_file:
     base_filename = os.path.splitext(uploaded_file.name)[0]
     download_filename = f"{base_filename}_환산결과.xlsx"
     # 1. 필요한 컬럼만 로드
-    columns_needed = ["계약일", "보험사", "상품명", "납입기간", "초회보험료", "쉐어율", "납입방법"]
+    columns_needed = ["계약일", "보험사", "상품명", "납입기간", "초회보험료", "쉐어율", "납입방법", "상품군2", "계약상태"]
     df = pd.read_excel(uploaded_file, usecols=columns_needed)
 
     # '납입방법' 컬럼이 있는 경우, '일시납'인 계약 제외
-    if "납입방법" in df.columns:
+    if {"납입방법", "상품군2", "계약상태"}.issubset(df.columns):
         before_count = len(df)
-        df["납입방법"] = df["납입방법"].astype(str).str.strip()
-        is_lumpsum = df["납입방법"].str.contains("일시납")
 
-        excluded_df = df[is_lumpsum].copy()     # 💡 제외된 계약 따로 저장
-        df = df[~is_lumpsum].copy()              # 💡 나머지만 계산에 사용
+        # 문자열 정제
+        df["납입방법"] = df["납입방법"].astype(str).str.strip()
+        df["상품군2"] = df["상품군2"].astype(str).str.strip()
+        df["계약상태"] = df["계약상태"].astype(str).str.strip()
+
+        # 조건별 필터
+        is_lumpsum = df["납입방법"].str.contains("일시납")
+        is_savings = df["상품군2"].str.contains("연금성|저축성")
+        is_cancelled = df["계약상태"].str.contains("철회")
+
+        # 결합 조건
+        is_excluded = is_lumpsum | is_savings | is_cancelled
+
+        # 분리
+        excluded_df = df[is_excluded].copy()
+        df = df[~is_excluded].copy()
+
         after_count = len(df)
         excluded_count = before_count - after_count
+
         if excluded_count > 0:
-            st.warning(f"⚠️ '일시납' 계약 {excluded_count}건은 계산에서 제외되었습니다.")
-
-
-        
-
+            st.warning(f"⚠️ 제외된 계약 {excluded_count}건 (일시납 / 연금성·저축성 / 철회 계약)이 계산에서 제외되었습니다.")
+    
     # 2. 컬럼명 정규화 (내부에서 쓸 이름으로 바꿈)
     df.rename(columns={
         "계약일": "계약일자",
