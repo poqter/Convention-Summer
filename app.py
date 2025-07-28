@@ -45,8 +45,8 @@ if uploaded_file:
     # 제외된 계약 테이블 추가 출력
     if not excluded_df.empty:
         st.subheader("🚫 제외된 일시납 계약 목록")
-        excluded_display = excluded_df[["계약일자", "보험사", "상품명", "납입기간", "초회보험료", "납입방법"]]
-        excluded_display.columns = ["계약일자", "보험사", "상품명", "납입기간", "보험료", "납입방법"]
+        excluded_display = excluded_df[["계약일", "보험사", "상품명", "납입기간", "초회보험료", "납입방법"]]
+        excluded_display.columns = ["계약일", "보험사", "상품명", "납입기간", "보험료", "납입방법"]
         st.dataframe(excluded_display)
 
     # 3. 필수 항목 체크
