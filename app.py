@@ -60,6 +60,18 @@ if uploaded_file:
         excluded_display.columns = ["계약일", "보험사", "상품명", "납입기간", "보험료", "납입방법"]
         st.dataframe(excluded_display)
 
+    # ✅ 제외된 계약별 사유 텍스트 출력
+    if "제외사유" in excluded_df.columns:
+        excluded_info = excluded_df[["상품명", "제외사유"]]
+        reason_text_lines = [
+            f"- ({row['상품명']}) → 제외사유: {row['제외사유'].strip()}"
+            for _, row in excluded_info.iterrows()
+        ]
+        if reason_text_lines:
+            st.markdown("📝 **제외 계약별 사유:**")
+            for line in reason_text_lines:
+                st.markdown(line)
+
     # 3. 필수 항목 체크
     required_columns = {"계약일자", "보험사", "상품명", "납입기간", "보험료", "쉐어율"}
     if not required_columns.issubset(df.columns):
