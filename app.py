@@ -163,7 +163,7 @@ if uploaded_file:
     df["쉐어율"] = df["쉐어율"].apply(lambda x: float(str(x).replace('%','')) if pd.notnull(x) else x)
 
     # 실적 보험료 계산 (쉐어율 적용)
-    #df["실적보험료"] = df["보험료"] * df["쉐어율"] / 100
+    df["실적보험료"] = df["보험료"] #* df["쉐어율"] / 100
 
     # 환산금액 계산
     df["컨벤션환산금액"] = df["실적보험료"] * df["컨벤션율"] / 100
