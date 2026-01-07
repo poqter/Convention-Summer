@@ -61,6 +61,10 @@ def autosize_columns_full(ws, padding=10):
         ws.column_dimensions[column_cells[0].column_letter].width = max_len + padding
 
 
+def mark(ok: bool) -> str:
+    return "✅" if ok else "❌"
+
+
 def check_requirements(dfin: pd.DataFrame):
     count_ok = len(dfin) >= MIN_COUNT
     hanwha_ok = (
@@ -68,10 +72,6 @@ def check_requirements(dfin: pd.DataFrame):
         & (pd.to_numeric(dfin["보험료"], errors="coerce").fillna(0) >= HANWHA_MIN_PREMIUM)
     ).any()
     return count_ok, hanwha_ok
-
-
-def mark(ok: bool) -> str:
-    return "✅" if ok else "❌"
 
 
 # ── 데이터 준비 단계 ─────────────────────────────────────────
@@ -183,24 +183,54 @@ def compute_rates_and_amounts(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def make_group(df: pd.DataFrame, show_summer: bool) -> pd.DataFrame:
-    """✅ Q1 반영: 갭 대신 '달성 여부(✅/❌)' 컬럼을 만든다."""
-    group = df.groupby("수금자명", dropna=False).agg(
+    """
+    ✅ Q1+Q1(추가) 반영:
+    - 컨벤션 달성: ✅/❌
+    - 필수조건(5건/한화가동)도 ✅/❌ 컬럼으로 추가
+    """
+    group_sum = df.groupby("수금자명", dropna=False).agg(
         실적보험료합계=("실적보험료", "sum"),
         컨벤션합계=("컨벤션환산금액", "sum"),
         썸머합계=("썸머환산금액", "sum") if show_summer else ("실적보험료", "sum"),
+        건수=("수금자명", "size"),
+        한화가동2만=("보험료", lambda s: 0),  # placeholder
     ).reset_index()
 
-    if not show_summer:
-        group.drop(columns=["썸머합계"], inplace=True)
+    # 한화가동2만 계산(수금자별)
+    tmp = df.copy()
+    tmp["보험료_num"] = pd.to_numeric(tmp["보험료"], errors="coerce").fillna(0)
+    tmp["is_hanwha_ok"] = (tmp["보험사"].astype(str).str.strip() == "한화생명") & (tmp["보험료_num"] >= HANWHA_MIN_PREMIUM)
 
-    # ✅ 달성 여부 컬럼(✅/❌)
+    hanwha_cnt = tmp.groupby("수금자명", dropna=False)["is_hanwha_ok"].any().reset_index(name="hanwha_ok")
+    group_sum = group_sum.drop(columns=["한화가동2만"])
+    group_sum = group_sum.merge(hanwha_cnt, on="수금자명", how="left")
+    group_sum["hanwha_ok"] = group_sum["hanwha_ok"].fillna(False)
+
+    if not show_summer:
+        group_sum.drop(columns=["썸머합계"], inplace=True)
+
+    # ✅ 컨벤션 달성 여부
     for label, target in CONV_TARGETS:
-        group[f"컨벤션_{label}달성"] = (group["컨벤션합계"] >= target).map(mark)
+        group_sum[f"컨벤션_{label}달성"] = (group_sum["컨벤션합계"] >= target).map(mark)
 
     if show_summer:
-        group["썸머달성"] = (group["썸머합계"] >= SUMM_TARGET).map(mark)
+        group_sum["썸머달성"] = (group_sum["썸머합계"] >= SUMM_TARGET).map(mark)
 
-    return group
+    # ✅ 필수조건 달성 여부
+    group_sum["필수_5건"] = (group_sum["건수"] >= MIN_COUNT).map(mark)
+    group_sum["필수_한화가동2만"] = group_sum["hanwha_ok"].map(mark)
+    group_sum["필수_전체"] = ((group_sum["건수"] >= MIN_COUNT) & (group_sum["hanwha_ok"])).map(mark)
+
+    # 보기용: 중간 컬럼 정리
+    group_sum.drop(columns=["hanwha_ok"], inplace=True)
+
+    # 컬럼 순서 정리(가독성)
+    base_cols = ["수금자명", "건수", "필수_5건", "필수_한화가동2만", "필수_전체", "실적보험료합계", "컨벤션합계"]
+    conv_cols = [f"컨벤션_{label}달성" for label, _ in CONV_TARGETS]
+    summer_cols = ["썸머합계", "썸머달성"] if show_summer else []
+    group_sum = group_sum[base_cols + conv_cols + summer_cols]
+
+    return group_sum
 
 
 # ── 화면 표시 ────────────────────────────────────────────────
@@ -355,10 +385,8 @@ def build_workbook(df: pd.DataFrame, group: pd.DataFrame, excluded_disp_all: pd.
     ws_summary = wb.active
     ws_summary.title = "요약"
 
-    # ✅ 요약표 포맷(문자)
+    # ✅ 요약표 포맷
     summary_fmt = group.copy()
-
-    # 금액 컬럼은 원표기
     if "실적보험료합계" in summary_fmt.columns:
         summary_fmt["실적보험료합계"] = summary_fmt["실적보험료합계"].map(lambda x: f"{x:,.0f} 원")
     if "컨벤션합계" in summary_fmt.columns:
@@ -397,7 +425,7 @@ def build_workbook(df: pd.DataFrame, group: pd.DataFrame, excluded_disp_all: pd.
 
         next_row = sums_and_gaps_block(ws, perf, conv, summ, show_summer, start_row=table_last_row)
 
-        # ✅ 수금자별 필수조건 체크(요청사항 유지)
+        # ✅ 수금자별 필수조건 체크(시트에도 유지)
         write_requirements_line(ws, base_row=next_row + 1, dfin=sub)
         next_row = next_row + 2
 
@@ -502,11 +530,11 @@ def run():
     st.markdown(req_box(f"필수 건수 {MIN_COUNT}건 이상", c_ok), unsafe_allow_html=True)
     st.markdown(req_box(f"한화생명 가동 {HANWHA_MIN_PREMIUM:,.0f}원 이상 1건", h_ok), unsafe_allow_html=True)
 
-    # ✅ 수금자별 요약 (Q1 적용: 달성 여부 ✅/❌)
+    # ✅ 수금자별 요약 (필수조건 컬럼 포함)
     st.subheader("🧮 수금자명별 요약")
     group = make_group(df, SHOW_SUMMER)
-    disp_group = group.copy()
 
+    disp_group = group.copy()
     # 금액 컬럼 포맷
     disp_group["실적보험료합계"] = disp_group["실적보험료합계"].map("{:,.0f} 원".format)
     disp_group["컨벤션합계"] = disp_group["컨벤션합계"].map("{:,.0f} 원".format)
@@ -515,7 +543,7 @@ def run():
 
     st.dataframe(disp_group, use_container_width=True)
 
-    # 엑셀 생성/다운로드
+    # 엑셀 생성/다운로드 (요약 시트에도 동일 요약표가 들어감)
     wb = build_workbook(df, group, excluded_disp_all, SHOW_SUMMER)
     excel_output = BytesIO()
     wb.save(excel_output)
