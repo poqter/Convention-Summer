@@ -225,7 +225,7 @@ def make_group(df: pd.DataFrame, show_summer: bool) -> pd.DataFrame:
     group_sum.drop(columns=["hanwha_ok"], inplace=True)
 
     # 컬럼 순서 정리(가독성)
-    base_cols = ["수금자명", "건수", "필수_5건", "필수_한화가동2만", "필수_전체", "실적보험료합계", "컨벤션합계"]
+    base_cols = ["수금자명", "건수", "5건", "한화가동2만", "실적보험료합계", "컨벤션합계"]
     conv_cols = [f"컨벤션_{label}달성" for label, _ in CONV_TARGETS]
     summer_cols = ["썸머합계", "썸머달성"] if show_summer else []
     group_sum = group_sum[base_cols + conv_cols + summer_cols]
