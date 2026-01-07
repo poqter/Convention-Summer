@@ -219,7 +219,6 @@ def make_group(df: pd.DataFrame, show_summer: bool) -> pd.DataFrame:
     # ✅ 필수조건 달성 여부
     group_sum["필수_5건"] = (group_sum["건수"] >= MIN_COUNT).map(mark)
     group_sum["필수_한화가동2만"] = group_sum["hanwha_ok"].map(mark)
-    group_sum["필수_전체"] = ((group_sum["건수"] >= MIN_COUNT) & (group_sum["hanwha_ok"])).map(mark)
 
     # 보기용: 중간 컬럼 정리
     group_sum.drop(columns=["hanwha_ok"], inplace=True)
